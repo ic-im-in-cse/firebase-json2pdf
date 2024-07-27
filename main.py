@@ -59,10 +59,31 @@ RELATION2TXT = {
     "OTHERS": "其他",
 }
 
+DEPART2CSVFILENAME = {
+    "14": "CSE.csv",  # 資工A
+    "15": "CSE.csv",  # 資工B
+    "16": "IM.csv",  # 資管A
+    "17": "IM.csv",  # 資管B
+    "18": "IC.csv",  # 資傳A(設計組)
+    "20": "IC.csv",  # 資傳B(科技組)
+    "33": "CSE.csv",  # 資工C
+    "35": "IN.csv",  # 資英
+}
+
+FILENAMES = ["CSE", "IM", "IC", "IN"]
+
 
 async def datetimeConverter(timestamp):
     time_obj = dt.strptime(timestamp, "%a %b %d %Y %H:%M:%S GMT%z (%Z)")
     return time_obj.strftime("%Y/%m/%d %H:%M:%S")
+
+
+async def init_csv():
+
+    for filename in FILENAMES:
+        with open(filename + ".csv", "w", newline="", encoding="utf-8") as csv_file:
+            writer = csv.writer(csv_file)
+            writer.writerow(FIELDS2CHINESE)
 
 
 # from JSON 2 CSV
@@ -72,57 +93,62 @@ async def write2CSV():
 
     students = data["students"]
 
-    with open("data.csv", "w", newline="", encoding="utf-8") as csv_file:
-        writer = csv.writer(csv_file)
-        writer.writerow(FIELDS2CHINESE)
-        for student_id, student_info in students.items():
-            row = [student_id]
+    for sid, info in students.items():
+
+        depart = sid[3:5]
+        filename = DEPART2CSVFILENAME[depart]
+        with open(filename, "a+", newline="", encoding="utf-8") as csv_file:
+            writer = csv.writer(csv_file)
+            # writer.writerow(FIELDS2CHINESE)
+            row = [sid]
             for field in FIELDS[1:]:
                 if field == "DIET":
-                    row.append(DIET2TXT[student_info.get(field, "")])
+                    row.append(DIET2TXT[info.get(field, "")])
                 elif field == "GENDER":
-                    row.append(GENDER2TXT[student_info.get(field, "")])
+                    row.append(GENDER2TXT[info.get(field, "")])
                 elif field == "EMGRELATIONS":
-                    row.append(RELATION2TXT[student_info.get(field, "")])
+                    row.append(RELATION2TXT[info.get(field, "")])
                 elif field == "TIMESTAMP":
-                    row.append(await datetimeConverter(student_info.get(field, "")))
+                    row.append(await datetimeConverter(info.get(field, "")))
                 else:
-                    row.append(student_info.get(field, ""))
+                    row.append(info.get(field, ""))
             writer.writerow(row)
 
 
 # from CSV 2 PDF
 async def write2PDF():
-    pdf = fpdf.FPDF(orientation="L", unit="mm", format="A4")
-    pdf.add_page()
-    pdf.add_font("NotoSansTC", "", "NotoSansTC-VariableFont_wght.ttf")
-    pdf.set_font("NotoSansTC", "", 8)  # Reduced font size
 
     # Read data from CSV
-    with open("data.csv", "r", encoding="utf-8") as file:
-        csv_reader = csv.DictReader(file)
-        data = list(csv_reader)
+    for filename in FILENAMES:
+        pdf = fpdf.FPDF(orientation="L", unit="mm", format="A4")
+        pdf.add_page()
+        pdf.add_font("NotoSansTC", "", "NotoSansTC-VariableFont_wght.ttf")
+        pdf.set_font("NotoSansTC", "", 8)  # Reduced font size
+        with open(filename + ".csv", "r", encoding="utf-8") as file:
+            csv_reader = csv.DictReader(file)
+            data = list(csv_reader)
 
-    # Set up table with adjusted column widths
-    col_widths = [20, 20, 10, 15, 15, 25, 20, 25, 20, 25, 25, 35]
-    row_height = 7  # Reduced row height
+        # Set up table with adjusted column widths
+        col_widths = [20, 20, 10, 15, 15, 25, 20, 25, 20, 25, 25, 35]
+        row_height = 7  # Reduced row height
 
-    # Write headers
-    for i, field in enumerate(FIELDS2CHINESE):
-        pdf.cell(col_widths[i], row_height, field, border=1)
-    pdf.ln()
-
-    # Write data
-    for row in data:
+        # Write headers
         for i, field in enumerate(FIELDS2CHINESE):
-            cell_text = row[field]
-            pdf.cell(col_widths[i], row_height, cell_text, border=1)
+            pdf.cell(col_widths[i], row_height, field, border=1)
         pdf.ln()
 
-    # Save the PDF
-    pdf.output("data.pdf")
+        # Write data
+        for row in data:
+            for i, field in enumerate(FIELDS2CHINESE):
+                cell_text = row[field]
+                pdf.cell(col_widths[i], row_height, cell_text, border=1)
+            pdf.ln()
+
+        # Save the PDF
+        pdf.output(filename + ".pdf")
 
 
 if __name__ == "__main__":
+    run(init_csv())
     run(write2CSV())
     run(write2PDF())

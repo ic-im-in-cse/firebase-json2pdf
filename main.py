@@ -24,16 +24,17 @@ FIELDS = [
 FIELDS2CHINESE = [
     "學號",
     "姓名",
-    "性別",
-    "飲食習慣",
-    "過敏食物",
-    "身分證字號",
-    "出生年月日",
-    "手機號碼",
-    "緊急聯絡人",
-    "與學員之關係",
-    "緊急連絡人電話",
-    "報名時間",
+    "簽名",
+    # "性別",
+    # "飲食習慣",
+    # "過敏食物",
+    # "身分證字號",
+    # "出生年月日",
+    # "手機號碼",
+    # "緊急聯絡人",
+    # "與學員之關係",
+    # "緊急連絡人電話",
+    # "報名時間",
 ]
 
 GENDER2TXT = {
@@ -74,6 +75,7 @@ FILENAMES = ["CSE", "IM", "IC", "IN"]
 
 
 async def datetimeConverter(timestamp):
+    return
     time_obj = dt.strptime(timestamp, "%a %b %d %Y %H:%M:%S GMT%z (%Z)")
     return time_obj.strftime("%Y/%m/%d %H:%M:%S")
 
@@ -102,6 +104,11 @@ async def write2CSV():
             # writer.writerow(FIELDS2CHINESE)
             row = [sid]
             for field in FIELDS[1:]:
+                if field != "NAME":
+                    continue
+                else:
+                    row.append(info.get(field, ""))
+                    continue
                 if field == "DIET":
                     row.append(DIET2TXT[info.get(field, "")])
                 elif field == "GENDER":
@@ -109,7 +116,8 @@ async def write2CSV():
                 elif field == "EMGRELATIONS":
                     row.append(RELATION2TXT[info.get(field, "")])
                 elif field == "TIMESTAMP":
-                    row.append(await datetimeConverter(info.get(field, "")))
+                    continue
+                    # row.append(await datetimeConverter(info.get(field, "")))
                 else:
                     row.append(info.get(field, ""))
             writer.writerow(row)
@@ -120,16 +128,16 @@ async def write2PDF():
 
     # Read data from CSV
     for filename in FILENAMES:
-        pdf = fpdf.FPDF(orientation="L", unit="mm", format="A4")
+        pdf = fpdf.FPDF(orientation="P", unit="mm", format="A4")
         pdf.add_page()
-        pdf.add_font("NotoSansTC", "", "NotoSansTC-VariableFont_wght.ttf")
-        pdf.set_font("NotoSansTC", "", 8)  # Reduced font size
+        pdf.add_font("IANSUI", "", "./Iansui-Regular.ttf")
+        pdf.set_font("IANSUI", "", 10)  # Reduced font size
         with open(filename + ".csv", "r", encoding="utf-8") as file:
             csv_reader = csv.DictReader(file)
             data = list(csv_reader)
 
         # Set up table with adjusted column widths
-        col_widths = [20, 20, 10, 15, 15, 25, 20, 25, 20, 25, 25, 35]
+        col_widths = [17, 17, 17]
         row_height = 7  # Reduced row height
 
         # Write headers
